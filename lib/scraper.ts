@@ -34,7 +34,8 @@ function parsePrice(text: string): { amount: number | null; currency: string | n
 }
 
 function parseNumber(text: string): number | null {
-  const t = (text || "").replace(/[^\d.,]/g, "").trim();
+  const withoutUnits = (text || "").replace(/[a-zA-Záéíóúñ]+/g, " ");
+  const t = withoutUnits.replace(/[^\d.,]/g, "").trim();
   if (!t) return null;
   const n = parseFloat(t.replace(/\./g, "").replace(",", "."));
   return isNaN(n) ? null : n;

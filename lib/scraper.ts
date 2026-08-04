@@ -34,10 +34,13 @@ function parsePrice(text: string): { amount: number | null; currency: string | n
 }
 
 function parseNumber(text: string): number | null {
-  const withoutUnits = (text || "").replace(/[a-zA-Záéíóúñ]+/g, " ");
-  const t = withoutUnits.replace(/[^\d.,]/g, "").trim();
-  if (!t) return null;
-  const n = parseFloat(t.replace(/\./g, "").replace(",", "."));
+  const match = (text || "").match(/\d+(?:[.,]\d+)*/);
+  if (!match) return null;
+  const raw = match[0];
+  const normalized = raw.includes(",")
+    ? raw.replace(/\./g, "").replace(",", ".")
+    : raw.replace(/\./g, "");
+  const n = parseFloat(normalized);
   return isNaN(n) ? null : n;
 }
 

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { aggregateByTipo, countByField } from "@/lib/kpis";
+import { CountBarChart, CountPieChart, TipoBarChart } from "./components/Charts";
 
 interface Property {
   nai_id: number;
@@ -103,6 +105,10 @@ export default function HomePage() {
     };
   }, [properties]);
 
+  const aggregatedByTipo = useMemo(() => aggregateByTipo(properties), [properties]);
+  const operacionData = useMemo(() => countByField(properties, "operacion"), [properties]);
+  const agenteData = useMemo(() => countByField(properties, "agente"), [properties]);
+
   function startEdit(id: number, field: EditableField, currentValue: string | number | null) {
     setEditingCell({ id, field });
     setEditValue(currentValue === null || currentValue === undefined ? "" : String(currentValue));
@@ -201,6 +207,45 @@ export default function HomePage() {
           label="Precio alquiler prom. (USD)"
           value={kpis.avgAlquilerUsd ? formatMoney(Math.round(kpis.avgAlquilerUsd), "USD") : "-"}
         />
+      </section>
+
+      {/* Gráficas */}
+      <h2 style={{ fontSize: 15, color: "#101827", margin: "0 0 10px" }}>Dashboard</h2>
+      <section
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: 12,
+          marginBottom: 24,
+        }}
+      >
+        <TipoBarChart data={aggregatedByTipo} dataKey="cantidad" label="Cantidad de propiedades por tipo" />
+        <CountPieChart data={operacionData} label="Distribución por operación" />
+        <TipoBarChart
+          data={aggregatedByTipo}
+          dataKey="precioVentaProm"
+          label="Precio venta promedio por tipo (USD)"
+          valueFormatter={(v) => `USD ${new Intl.NumberFormat("es-UY").format(v)}`}
+        />
+        <TipoBarChart
+          data={aggregatedByTipo}
+          dataKey="precioAlquilerProm"
+          label="Precio alquiler promedio por tipo (USD)"
+          valueFormatter={(v) => `USD ${new Intl.NumberFormat("es-UY").format(v)}`}
+        />
+        <TipoBarChart
+          data={aggregatedByTipo}
+          dataKey="precioM2VentaProm"
+          label="$/m² promedio en venta, por tipo (USD)"
+          valueFormatter={(v) => `USD ${new Intl.NumberFormat("es-UY").format(v)}/m²`}
+        />
+        <TipoBarChart
+          data={aggregatedByTipo}
+          dataKey="mesesPublicadaProm"
+          label="Meses promedio publicada, por tipo"
+          valueFormatter={(v) => `${new Intl.NumberFormat("es-UY", { maximumFractionDigits: 1 }).format(v)} meses`}
+        />
+        <CountBarChart data={agenteData} label="Cantidad de propiedades por agente" />
       </section>
 
       {/* Código de edición */}

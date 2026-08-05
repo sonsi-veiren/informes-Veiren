@@ -24,13 +24,14 @@ export async function POST() {
     for (const p of properties) {
       await query(
         `INSERT INTO properties (
-          nai_id, titulo, ubicacion, tipo, fecha_ingreso, ult_movimiento, operacion,
+          nai_id, titulo, ubicacion, agrupacion, tipo, fecha_ingreso, ult_movimiento, operacion,
           precio_venta, moneda_venta, precio_alquiler, moneda_alquiler,
           superficie, dormitorios, banos, agente, tags, url, updated_at
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17, now())
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18, now())
         ON CONFLICT (nai_id) DO UPDATE SET
           titulo = EXCLUDED.titulo,
           ubicacion = EXCLUDED.ubicacion,
+          agrupacion = EXCLUDED.agrupacion,
           tipo = EXCLUDED.tipo,
           fecha_ingreso = EXCLUDED.fecha_ingreso,
           ult_movimiento = EXCLUDED.ult_movimiento,
@@ -51,6 +52,7 @@ export async function POST() {
           p.naiId,
           p.titulo,
           p.ubicacion,
+          p.agrupacion,
           p.tipo,
           p.fechaIngreso,
           p.ultMovimiento,

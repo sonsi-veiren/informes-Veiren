@@ -2,6 +2,7 @@ export interface PropertyLike {
   tipo: string | null;
   operacion: string | null;
   agente: string | null;
+  agrupacion: string | null;
   fecha_ingreso: string | null;
   precio_venta: number | null;
   moneda_venta: string | null;
@@ -26,7 +27,7 @@ const MESES: Record<string, number> = {
   dic: 11,
 };
 
-function stripAccents(s: string): string {
+export function stripAccents(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
@@ -133,4 +134,58 @@ export function countByField(
   return Array.from(map.entries())
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value);
+}
+
+/**
+ * Palabras clave de proyectos DDC (catalogo de proyectos, agosto 2026), en
+ * minusculas y sin acentos, para comparar contra el nombre de "agrupacion"
+ * que trae cada propiedad desde NAI (ej: "WELL 1", "Lagos Oeste", "LIV Aura").
+ * Si una propiedad tiene agrupacion pero no matchea ninguna de estas, se
+ * considera "Externo" (un desarrollo de otra inmobiliaria/desarrollador).
+ * Si no tiene agrupacion, es una propiedad "General" (venta o alquiler suelto,
+ * no parte de ningun complejo).
+ */
+const DDC_KEYWORDS = [
+  "la reserva",
+  "well",
+  "la bahia",
+  "liv",
+  "las casas",
+  "lagos",
+  "campos",
+  "eria",
+  "bocking",
+  "caleta",
+  "jose ignacio",
+  "horneros",
+  "fresh plaza",
+  "tierra",
+];
+
+export type Categoria = "General" | "DDC" | "Extra";
+
+export function classifyCategoria(agrupacion: string | null | undefined): Categoria {
+  if (!agrupacion || !agrupacion.trim() || agrupacion.trim().toLowerCase() === "x") return "General";
+  const norm = stripAccents(agrupacion.toLowerCase());
+  return DDC_KEYWORDS.some((k) => norm.includes(k)) ? "DDC" : "Extra";
+}
+
+export interface CategoriaOperacionRow {
+  operacion: string;
+  General: number;
+  DDC: number;
+  Extra: number;
+}
+
+export function aggregateByCategoriaOperacion(properties: PropertyLike[]): CategoriaOperacionRow[] {
+  const venta: CategoriaOperacionRow = { operacion: "Venta", General: 0, DDC: 0, Extra: 0 };
+  const alquiler: CategoriaOperacionRow = { operacion: "Alquiler", General: 0, DDC: 0, Extra: 0 };
+
+  for (const p of properties) {
+    const cat = classifyCategoria(p.agrupacion);
+    if (p.precio_venta) venta[cat] += 1;
+    if (p.precio_alquiler) alquiler[cat] += 1;
+  }
+
+  return [venta, alquiler];
 }

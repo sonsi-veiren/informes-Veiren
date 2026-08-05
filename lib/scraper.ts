@@ -6,6 +6,7 @@ export interface ScrapedProperty {
   naiId: number;
   titulo: string;
   ubicacion: string;
+  agrupacion: string | null;
   tipo: string;
   fechaIngreso: string | null;
   ultMovimiento: string | null;
@@ -34,13 +35,9 @@ function parsePrice(text: string): { amount: number | null; currency: string | n
 }
 
 function parseNumber(text: string): number | null {
-  const match = (text || "").match(/\d+(?:[.,]\d+)*/);
-  if (!match) return null;
-  const raw = match[0];
-  const normalized = raw.includes(",")
-    ? raw.replace(/\./g, "").replace(",", ".")
-    : raw.replace(/\./g, "");
-  const n = parseFloat(normalized);
+  const t = (text || "").replace(/[^\d.,]/g, "").trim();
+  if (!t) return null;
+  const n = parseFloat(t.replace(/\./g, "").replace(",", "."));
   return isNaN(n) ? null : n;
 }
 
@@ -114,7 +111,18 @@ export function parseListing(html: string): { properties: ScrapedProperty[]; tot
     const titulo = link.text().trim();
 
     const datosCols = row.find("> .propiedades_listado_columna_datos > .dato_listado");
-    const ubicacion = datosCols.eq(0).text().replace(/\s+/g, " ").trim();
+    const ubicacionDiv = datosCols.eq(0);
+    const agrupacionLink = ubicacionDiv.find('a[href*="agrupacion.php"]').first();
+    const agrupacion = agrupacionLink.length ? agrupacionLink.text().trim() : null;
+    const ubicacion = ubicacionDiv
+      .clone()
+      .find("a")
+      .remove()
+      .end()
+      .text()
+      .replace(/\s+/g, " ")
+      .replace(/-\s*$/, "")
+      .trim();
     const tipo = datosCols.eq(1).find("strong").text().trim();
 
     let fechaIngreso: string | null = null;
@@ -159,6 +167,7 @@ export function parseListing(html: string): { properties: ScrapedProperty[]; tot
       naiId,
       titulo,
       ubicacion,
+      agrupacion,
       tipo,
       fechaIngreso,
       ultMovimiento,

@@ -53,6 +53,8 @@ export async function ensureSchema(): Promise<void> {
       manual_updated_at TIMESTAMPTZ
     );
   `);
+  // Migracion aditiva: agrega la columna si la tabla ya existia de antes (sin esta columna)
+  await p.query(`ALTER TABLE properties ADD COLUMN IF NOT EXISTS agrupacion TEXT;`);
   await p.query(`
     CREATE TABLE IF NOT EXISTS sync_log (
       id SERIAL PRIMARY KEY,

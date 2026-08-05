@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { aggregateByTipo, countByField } from "@/lib/kpis";
-import { CountBarChart, CountPieChart, TipoBarChart } from "./components/Charts";
+import { aggregateByCategoriaOperacion, aggregateByTipo, classifyCategoria, countByField } from "@/lib/kpis";
+import { CountPieChart, GroupedCategoriaChart, TipoBarChart } from "./components/Charts";
 
 interface Property {
   nai_id: number;
   titulo: string;
   ubicacion: string;
+  agrupacion: string | null;
   tipo: string;
   fecha_ingreso: string | null;
   ult_movimiento: string | null;
@@ -46,6 +47,7 @@ export default function HomePage() {
   const [editingCell, setEditingCell] = useState<{ id: number; field: EditableField } | null>(null);
   const [editValue, setEditValue] = useState<string>("");
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   async function loadProperties() {
     const res = await fetch("/api/properties");
@@ -107,7 +109,7 @@ export default function HomePage() {
 
   const aggregatedByTipo = useMemo(() => aggregateByTipo(properties), [properties]);
   const operacionData = useMemo(() => countByField(properties, "operacion"), [properties]);
-  const agenteData = useMemo(() => countByField(properties, "agente"), [properties]);
+  const categoriaOperacionData = useMemo(() => aggregateByCategoriaOperacion(properties), [properties]);
 
   function startEdit(id: number, field: EditableField, currentValue: string | number | null) {
     setEditingCell({ id, field });
@@ -141,13 +143,35 @@ export default function HomePage() {
   return (
     <main style={{ padding: "24px 32px", maxWidth: 1400, margin: "0 auto" }}>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20 }}>
-        <div>
-          <h1 style={{ fontFamily: "inherit", fontSize: 24, margin: 0, color: "#101827" }}>
-            Informe de Propiedades — Veiren
-          </h1>
-          <p style={{ margin: "4px 0 0", color: "#383b43", fontSize: 13 }}>
-            Datos sincronizados desde NAI. Reemplaza el Excel mensual.
-          </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          {logoFailed ? (
+            <span
+              style={{
+                fontWeight: 700,
+                fontSize: 26,
+                color: "#002fa7",
+                letterSpacing: 0.5,
+                fontFamily: "inherit",
+              }}
+            >
+              veiren
+            </span>
+          ) : (
+            <img
+              src="/veiren-logo.png"
+              alt="Veiren"
+              style={{ height: 42, width: "auto" }}
+              onError={() => setLogoFailed(true)}
+            />
+          )}
+          <div>
+            <h1 style={{ fontFamily: "inherit", fontSize: 22, margin: 0, color: "#101827" }}>
+              Informe de Propiedades
+            </h1>
+            <p style={{ margin: "4px 0 0", color: "#383b43", fontSize: 13 }}>
+              Datos sincronizados desde NAI. Reemplaza el Excel mensual.
+            </p>
+          </div>
         </div>
         <div style={{ textAlign: "right" }}>
           <button
@@ -245,7 +269,10 @@ export default function HomePage() {
           label="Meses promedio publicada, por tipo"
           valueFormatter={(v) => `${new Intl.NumberFormat("es-UY", { maximumFractionDigits: 1 }).format(v)} meses`}
         />
-        <CountBarChart data={agenteData} label="Cantidad de propiedades por agente" />
+        <GroupedCategoriaChart
+          data={categoriaOperacionData}
+          label="General vs DDC vs Externo — por operación"
+        />
       </section>
 
       {/* Código de edición */}
@@ -274,6 +301,7 @@ export default function HomePage() {
                 <th>ID</th>
                 <th>Título</th>
                 <th>Ubicación</th>
+                <th>Categoría</th>
                 <th>Tipo</th>
                 <th>Operación</th>
                 <th>Venta</th>
@@ -304,6 +332,9 @@ export default function HomePage() {
                     )}
                   </td>
                   <td>{p.ubicacion}</td>
+                  <td>
+                    <CategoriaBadge agrupacion={p.agrupacion} />
+                  </td>
                   <td>{p.tipo}</td>
                   <td>{p.operacion}</td>
                   <td>{formatMoney(p.precio_venta, p.moneda_venta)}</td>
@@ -363,6 +394,33 @@ export default function HomePage() {
         </div>
       )}
     </main>
+  );
+}
+
+function CategoriaBadge({ agrupacion }: { agrupacion: string | null }) {
+  const categoria = classifyCategoria(agrupacion);
+  const colors: Record<string, { bg: string; fg: string }> = {
+    DDC: { bg: "#dbe6fb", fg: "#002fa7" },
+    Extra: { bg: "#e6e7ea", fg: "#101827" },
+    General: { bg: "#f4f4f4", fg: "#8891a5" },
+  };
+  const { bg, fg } = colors[categoria];
+  return (
+    <span
+      title={agrupacion || undefined}
+      style={{
+        background: bg,
+        color: fg,
+        borderRadius: 4,
+        padding: "2px 8px",
+        fontSize: 11,
+        fontWeight: 600,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {categoria}
+      {agrupacion ? ` · ${agrupacion}` : ""}
+    </span>
   );
 }
 

@@ -13,7 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { AggregatedRow } from "@/lib/kpis";
+import type { AggregatedRow, CategoriaOperacionRow } from "@/lib/kpis";
 
 const COLORS = ["#002fa7", "#4c6794", "#7a94c4", "#a9bce0", "#101827", "#383b43", "#8891a5"];
 
@@ -118,6 +118,33 @@ export function CountBarChart({ data, label }: { data: { name: string; value: nu
           <YAxis type="category" dataKey="name" fontSize={11} width={110} />
           <Tooltip />
           <Bar dataKey="value" fill="#002fa7" radius={[0, 4, 4, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
+  );
+}
+
+export function GroupedCategoriaChart({ data, label }: { data: CategoriaOperacionRow[]; label: string }) {
+  if (!data.length) {
+    return (
+      <ChartCard label={label}>
+        <EmptyState />
+      </ChartCard>
+    );
+  }
+
+  return (
+    <ChartCard label={label}>
+      <ResponsiveContainer width="100%" height={240}>
+        <BarChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+          <XAxis dataKey="operacion" fontSize={12} />
+          <YAxis fontSize={11} allowDecimals={false} />
+          <Tooltip />
+          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Bar dataKey="General" fill="#a9bce0" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="DDC" fill="#002fa7" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="Extra" fill="#101827" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </ChartCard>
